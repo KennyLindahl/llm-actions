@@ -3,7 +3,7 @@
 const { OpenAI } = require("openai");
 const path = require("path");
 const fs = require("fs").promises;
-const { execSync } = require("child_process");
+const actions = require("./actions");
 const dotenv = require("dotenv");
 
 const scriptDir = __dirname;
@@ -44,72 +44,33 @@ function extractContent(input) {
   return jsonArrayString.trim();
 }
 
-// Could probably be done in a better way
-function getCurrentDirectory() {
-  try {
-    const pwd = execSync("pwd").toString().trim();
-    return pwd;
-  } catch (error) {
-    console.error("Error retrieving current directory:", error);
-    process.exit(1);
-  }
-}
-
-// // Action type: Search
-// {
-//   type: “search”,
-//   searchPhrase: string
-//   Id: string
-// }
 function getPrompt(userInput) {
+  const actionDefinitions = Object.values(actions)
+    .map((action) => `${action.promptActionDefinition}\n`)
+    .join("");
   return `
   Based on this query:
   "${userInput}"
 
-  // Action type: Create directory
-  {
-    type: “create-directory”,
-    path: string
-  }
-
-  // Action type: Create file
-  {
-    type: “create-file”,
-    fileContents: string,
-    fileNamePath: string
-  }
+  ${actionDefinitions}
 
   Output this format: [Actions here]
   `;
 }
 
-async function executeActions(actions) {
-  const currentDir = getCurrentDirectory();
-
-  for (const action of actions) {
-    switch (action.type) {
+async function executeActions(actionEvents) {
+  for (const actionEvent of actionEvents) {
+    switch (actionEvent.type) {
       case "create-directory":
-        try {
-          const directoryPath = path.join(currentDir, action.path);
-          await fs.mkdir(directoryPath, { recursive: true });
-          console.log(`Created directory: ${directoryPath}`);
-        } catch (error) {
-          console.error(`Error creating directory ${action.path}:`, error);
-        }
+        await actions.createDirectory.execute(actionEvent);
         break;
 
       case "create-file":
-        try {
-          const filePath = path.join(currentDir, action.fileNamePath);
-          await fs.writeFile(filePath, action.fileContents);
-          console.log(`Created file: ${filePath}`);
-        } catch (error) {
-          console.error(`Error creating file ${action.fileNamePath}:`, error);
-        }
+        await actions.createFile.execute(actionEvent);
         break;
 
       default:
-        console.error("Invalid action type:", action.type);
+        console.error("Invalid action type:", actionEvent.type);
         break;
     }
   }
@@ -119,8 +80,8 @@ async function run() {
   const args = process.argv.slice(2);
   const userInput = args.join(" ");
   const prompt = getPrompt(userInput);
-  const actions = await executePrompt(prompt);
-  await executeActions(actions);
+  const actionEvents = await executePrompt(prompt);
+  await executeActions(actionEvents);
 }
 
 (async () => {
