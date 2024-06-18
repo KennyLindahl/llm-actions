@@ -7,6 +7,8 @@ module.exports = {
     try {
       const currentDir = utils.getCurrentDir();
       const filePath = path.join(currentDir, action.fileNamePath);
+      const dirPath = path.dirname(filePath);
+      await fs.mkdir(dirPath, { recursive: true });
       await fs.writeFile(filePath, action.fileContents);
       console.log(`Created file: ${filePath}`);
     } catch (error) {

@@ -2,9 +2,9 @@
 
 const { OpenAI } = require("openai");
 const path = require("path");
-const fs = require("fs").promises;
 const actions = require("./actions");
 const dotenv = require("dotenv");
+const utils = require("./utils.js");
 
 const scriptDir = __dirname;
 const envPath = path.join(scriptDir, ".env");
@@ -16,12 +16,20 @@ const openai = new OpenAI({
 
 async function executePrompt(prompt) {
   const response = await openai.chat.completions.create({
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "system",
+        content: "Answer in json format",
+      },
+      { role: "user", content: prompt },
+    ],
     model: "gpt-4o",
-    temperature: 0.7,
+    temperature: 0,
+    response_format: { type: "json_object" },
   });
 
   const content = extractContent(response.choices[0].message.content);
+
   return content ? JSON.parse(content) : null;
 }
 
