@@ -28,9 +28,10 @@ async function executePrompt(prompt) {
     response_format: { type: "json_object" },
   });
 
-  const content = extractContent(response.choices[0].message.content);
+  const content = response.choices[0].message.content;
+  const parsedContent = JSON.parse(content).actions;
 
-  return content ? JSON.parse(content) : null;
+  return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
 }
 
 function extractContent(input) {
@@ -78,7 +79,8 @@ Based on this query:
 Action definitions (YOU MUST ALWAYS choose either read-file or create-file per fileNamePath)
 ${actionDefinitions}
 
-Output this format: [Actions here]
+Output this format:
+{actions: [Actions here]}
 
 This is the current directory structure:
 ${directoryTree}

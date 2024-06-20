@@ -39,7 +39,10 @@ async function readDirectoryString(dirPath) {
   return formatDirectoryStructure(dirStructure);
 }
 
-async function readDirectoryRecursive(dirPath, ignorePaths = ["node_modules"]) {
+async function readDirectoryRecursive(
+  dirPath,
+  ignorePaths = ["node_modules", "venv", ".git", ".next"],
+) {
   const result = [];
 
   try {
@@ -49,12 +52,15 @@ async function readDirectoryRecursive(dirPath, ignorePaths = ["node_modules"]) {
       const itemPath = path.join(dirPath, item.name);
       const relativePath = path.relative(dirPath, itemPath);
 
-      if (ignorePaths.some(ignorePath => relativePath.includes(ignorePath))) {
+      if (ignorePaths.some((ignorePath) => relativePath.includes(ignorePath))) {
         continue;
       }
 
       if (item.isDirectory()) {
-        const subDirStructure = await readDirectoryRecursive(itemPath, ignorePaths);
+        const subDirStructure = await readDirectoryRecursive(
+          itemPath,
+          ignorePaths,
+        );
         result.push({ [item.name]: subDirStructure });
       } else {
         result.push(item.name);
