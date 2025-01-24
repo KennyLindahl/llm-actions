@@ -1,6 +1,7 @@
 const { execSync } = require("child_process");
 const fs = require("fs").promises;
 const path = require("path");
+const { config } = require("./config");
 
 function getCurrentDir() {
   try {
@@ -41,7 +42,7 @@ async function readDirectoryString(dirPath) {
 
 async function readDirectoryRecursive(
   dirPath,
-  ignorePaths = ["node_modules", "venv", ".git", ".next"],
+  ignorePaths = config.ignorePaths,
 ) {
   const result = [];
 

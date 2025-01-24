@@ -7,19 +7,23 @@ LLM Actions is a CLI tool that uses OpenAI's ChatGPT to create & update files an
 - Read file
 - Create file
 - Create directory
-- Create image
+- Create image (only available when OpenAI API key is set)
 
 ## How to use
 
 ### Prerequisies
 
 - [Node.js](https://nodejs.org/en/)
-- [OpenAI API key](https://platform.openai.com/docs/quickstart)
+- [OpenAI API key](https://platform.openai.com/docs/quickstart) (if using OpenAI's models)
 
 ### Steps
 
 1. `git clone git@github.com:KennyLindahl/llm-actions.git`
-2. Copy .env.example to .env and add your OpenAI API key
+
+2. Copy `.env.example` to `.env`
+
+   > Add your OpenAI API key (or just use Ollama)
+
 3. Install llm-actions
 
 ```

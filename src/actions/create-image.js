@@ -1,4 +1,5 @@
-const openai = require("../models/openai.js");
+const { config } = require("../config.js");
+const { openai } = require("../models/openai.js");
 const utils = require("../utils.js");
 const axios = require("axios");
 const path = require("path");
@@ -14,11 +15,10 @@ module.exports = {
 
       // Must use dall-e-2 for 256x256 and 512x512
       const response = await openai.images.generate({
-        model: "dall-e-2",
+        model: config.openAi.imageModel,
         prompt: action.prompt,
         n: 1,
         size: action.size,
-        quality: "standard",
       });
 
       const imageUrl = response.data[0].url;
