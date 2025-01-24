@@ -2,27 +2,7 @@
 
 const actions = require("./actions");
 const utils = require("./utils.js");
-const openai = require("./models/openai.js");
-
-async function executePrompt(prompt) {
-  const response = await openai.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: "Answer in json format",
-      },
-      { role: "user", content: prompt },
-    ],
-    model: "gpt-4o",
-    temperature: 0,
-    response_format: { type: "json_object" },
-  });
-
-  const content = response.choices[0].message.content;
-  const parsedContent = JSON.parse(content).actions;
-
-  return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
-}
+const { executePrompt } = require("./models/index.js");
 
 async function getPrompt(userInput, fileContents) {
   const currentDirectory = utils.getCurrentDir();
