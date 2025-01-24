@@ -1,4 +1,4 @@
-const openai = require("../models/openai.js");
+const { openai } = require("../models/openai.js");
 const utils = require("../utils.js");
 const axios = require("axios");
 const path = require("path");

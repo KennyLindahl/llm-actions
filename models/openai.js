@@ -7,6 +7,33 @@ dotenv.config({ path: envPath });
 
 const { OpenAI } = require("openai");
 
-module.exports = new OpenAI({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+async function executePrompt(prompt) {
+  try {
+    const response = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "Answer in json format",
+        },
+        { role: "user", content: prompt },
+      ],
+      model: "gpt-4o",
+      temperature: 0,
+      response_format: { type: "json_object" },
+    });
+
+    const content = response.choices[0].message.content;
+    const parsedContent = JSON.parse(content).actions;
+
+    return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
+  } catch (error) {
+    console.error("Error executing prompt with OpenAI:", error);
+    throw error;
+  }
+}
+
+module.exports = { openai, executePrompt };
