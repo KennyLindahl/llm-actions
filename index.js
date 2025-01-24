@@ -1,18 +1,8 @@
 #!/usr/bin/env node
 
-const { OpenAI } = require("openai");
-const path = require("path");
 const actions = require("./actions");
-const dotenv = require("dotenv");
 const utils = require("./utils.js");
-
-const scriptDir = __dirname;
-const envPath = path.join(scriptDir, ".env");
-dotenv.config({ path: envPath });
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = require("./models/openai.js");
 
 async function executePrompt(prompt) {
   const response = await openai.chat.completions.create({
@@ -32,25 +22,6 @@ async function executePrompt(prompt) {
   const parsedContent = JSON.parse(content).actions;
 
   return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
-}
-
-function extractContent(input) {
-  const startBracketIndex = input.indexOf("[");
-  const endBracketIndex = input.lastIndexOf("]");
-
-  if (
-    startBracketIndex === -1 ||
-    endBracketIndex === -1 ||
-    endBracketIndex <= startBracketIndex
-  ) {
-    return null; // No valid JSON array found
-  }
-
-  const jsonArrayString = input.substring(
-    startBracketIndex,
-    endBracketIndex + 1,
-  );
-  return jsonArrayString.trim();
 }
 
 async function getPrompt(userInput, fileContents) {
@@ -99,6 +70,10 @@ async function executeActions(actionEvents) {
 
       case "create-file":
         await actions.createFile.execute(actionEvent);
+        break;
+
+      case "create-image":
+        await actions.createImage.execute(actionEvent);
         break;
 
       case "read-file":

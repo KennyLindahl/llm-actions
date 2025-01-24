@@ -7,6 +7,7 @@
     "llm-actions": "./index.js"
   },
   "dependencies": {
+    "axios": "^1.7.2",
     "dotenv": "^16.4.5",
     "openai": "^4.51.0"
   },

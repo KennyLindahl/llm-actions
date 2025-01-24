@@ -7,6 +7,7 @@ LLM Actions is a CLI tool that uses OpenAI's ChatGPT to create & update files an
 - Read file
 - Create file
 - Create directory
+- Create image
 
 ## How to use
 
