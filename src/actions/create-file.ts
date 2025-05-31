@@ -1,9 +1,16 @@
-const utils = require("../utils.js");
-const path = require("path");
-const fs = require("fs").promises;
+import path from "path";
+import { promises as fs } from "fs";
+import * as utils from "../utils";
+import { ActionDefinition } from ".";
 
-module.exports = {
-  async execute(action) {
+export type CreateFileActionEvent = {
+  type: "create-file";
+  fileContents: string;
+  fileNamePath: string;
+};
+
+export const createFile: ActionDefinition<CreateFileActionEvent> = {
+  async execute(action: CreateFileActionEvent): Promise<void> {
     try {
       const currentDir = utils.getCurrentDir();
       const filePath = path.join(currentDir, action.fileNamePath);
@@ -15,10 +22,11 @@ module.exports = {
       console.error(`Error creating file ${action.fileNamePath}:`, error);
     }
   },
+
   promptActionDefinition: `
     // Action type: Create file
     {
-      type: “create-file”,
+      type: "create-file",
       fileContents: string,
       fileNamePath: string
     }

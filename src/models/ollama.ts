@@ -1,14 +1,18 @@
-const { Ollama } = require("ollama");
-const { config } = require("../config");
+import { Ollama } from "ollama";
+import { config } from "../config";
+
+interface ParsedContent {
+  actions?: unknown[] | unknown;
+}
 
 const ollama = new Ollama({
   host: config.ollama.host,
 });
 
-async function executePrompt(prompt) {
+export async function executePrompt(prompt: string): Promise<unknown[]> {
   try {
     const response = await ollama.chat({
-      model: config.ollama.model,
+      model: config.ollama.model as string,
       messages: [
         {
           role: "system",
@@ -22,10 +26,8 @@ async function executePrompt(prompt) {
       ],
     });
 
-    // Extract the content from the response
     let content = response.message.content;
 
-    // Use regex to extract only the JSON portion
     const jsonMatch = content.match(/\{.*\}|\[.*\]/s);
     if (!jsonMatch) {
       throw new Error("No valid JSON or array found in the response");
@@ -33,8 +35,7 @@ async function executePrompt(prompt) {
 
     content = jsonMatch[0];
 
-    // Parse the JSON content from the response
-    const parsedContent = JSON.parse(content);
+    const parsedContent: ParsedContent = JSON.parse(content);
 
     if (parsedContent && Array.isArray(parsedContent.actions)) {
       return parsedContent.actions;
@@ -46,5 +47,3 @@ async function executePrompt(prompt) {
     throw error;
   }
 }
-
-module.exports = { executePrompt };
