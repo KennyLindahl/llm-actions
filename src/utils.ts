@@ -1,9 +1,9 @@
-const { execSync } = require("child_process");
-const fs = require("fs").promises;
-const path = require("path");
-const { config } = require("./config");
+import { execSync } from "child_process";
+import { promises as fs } from "fs";
+import * as path from "path";
+import { config } from "./config";
 
-function getCurrentDir() {
+function getCurrentDir(): string {
   try {
     const pwd = execSync("pwd").toString().trim();
     return pwd;
@@ -13,10 +13,16 @@ function getCurrentDir() {
   }
 }
 
-async function readDirectoryString(dirPath) {
+/**
+ * Reads a directory and returns a formatted tree string
+ */
+export async function readDirectoryString(dirPath: string): Promise<string> {
   const dirStructure = await readDirectoryRecursive(dirPath);
 
-  function formatDirectoryStructure(structure, indent = "") {
+  function formatDirectoryStructure(
+    structure: DirectoryStructure,
+    indent = "",
+  ): string {
     let result = "";
 
     for (let i = 0; i < structure.length; i++) {
@@ -40,11 +46,22 @@ async function readDirectoryString(dirPath) {
   return formatDirectoryStructure(dirStructure);
 }
 
+/**
+ * A directory structure item can be a filename (string) or an object with a folder name as key and its contents as value
+ */
+type DirectoryStructureItem =
+  | string
+  | { [folderName: string]: DirectoryStructure };
+type DirectoryStructure = DirectoryStructureItem[];
+
+/**
+ * Recursively reads a directory into a nested structure
+ */
 async function readDirectoryRecursive(
-  dirPath,
-  ignorePaths = config.ignorePaths,
-) {
-  const result = [];
+  dirPath: string,
+  ignorePaths: string[] = config.ignorePaths,
+): Promise<DirectoryStructure> {
+  const result: DirectoryStructure = [];
 
   try {
     const items = await fs.readdir(dirPath, { withFileTypes: true });
@@ -74,7 +91,4 @@ async function readDirectoryRecursive(
   return result;
 }
 
-module.exports = {
-  getCurrentDir,
-  readDirectoryString,
-};
+export { getCurrentDir };

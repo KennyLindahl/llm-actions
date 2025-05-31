@@ -1,18 +1,15 @@
-const path = require("path");
-const dotenv = require("dotenv");
-const scriptDir = __dirname;
-const envPath = path.join(scriptDir, "../.env");
-const { config } = require("../config.js");
+import { config } from "../config";
+import OpenAI from "openai";
 
-dotenv.config({ path: envPath });
-
-const { OpenAI } = require("openai");
-
-const openai = new OpenAI({
+export const openai = new OpenAI({
   apiKey: config.openAi.apiKey,
 });
 
-async function executePrompt(prompt) {
+type Action = {
+  [key: string]: any;
+};
+
+export async function executePrompt(prompt: string): Promise<Action[]> {
   try {
     const response = await openai.chat.completions.create({
       messages: [
@@ -22,13 +19,13 @@ async function executePrompt(prompt) {
         },
         { role: "user", content: prompt },
       ],
-      model: "gpt-4o",
+      model: config.openAi.model as string,
       temperature: 0,
       response_format: { type: "json_object" },
     });
 
     const content = response.choices[0].message.content;
-    const parsedContent = JSON.parse(content).actions;
+    const parsedContent = JSON.parse(content ?? "{}").actions;
 
     return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
   } catch (error) {
@@ -36,5 +33,3 @@ async function executePrompt(prompt) {
     throw error;
   }
 }
-
-module.exports = { openai, executePrompt };

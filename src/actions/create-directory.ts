@@ -1,9 +1,15 @@
-const utils = require("../utils.js");
-const path = require("path");
-const fs = require("fs").promises;
+import * as path from "path";
+import { promises as fs } from "fs";
+import * as utils from "../utils.js";
+import { ActionDefinition } from "./index.js";
 
-module.exports = {
-  async execute(action) {
+export type CreateDirectoryActionEvent = {
+  type: "create-directory";
+  path: string;
+};
+
+export const createDirectory: ActionDefinition<CreateDirectoryActionEvent> = {
+  async execute(action: CreateDirectoryActionEvent): Promise<void> {
     try {
       const currentDir = utils.getCurrentDir();
       const directoryPath = path.join(currentDir, action.path);
@@ -13,10 +19,11 @@ module.exports = {
       console.error(`Error creating directory ${action.path}:`, error);
     }
   },
+
   promptActionDefinition: `
     // Action type: Create directory
     {
-      type: “create-directory”,
+      type: "create-directory",
       path: string
     }
   `,

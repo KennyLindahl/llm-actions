@@ -1,10 +1,19 @@
 #!/usr/bin/env node
 
-const actions = require("./actions");
-const utils = require("./utils.js");
-const { executePrompt } = require("./models/index.js");
+import { actions } from "./actions";
+import * as utils from "./utils";
+import { executePrompt } from "./models/index";
+import { ActionEvent } from "./actions";
 
-async function getPrompt(userInput, fileContents) {
+type FileContent = {
+  fileNamePath: string;
+  contents: string;
+};
+
+async function getPrompt(
+  userInput: string,
+  fileContents?: FileContent[]
+): Promise<string> {
   const currentDirectory = utils.getCurrentDir();
   const directoryTree = await utils.readDirectoryString(currentDirectory);
 
@@ -18,7 +27,7 @@ async function getPrompt(userInput, fileContents) {
           (file) =>
             `//${file.fileNamePath}
 ${file.contents}
-  `,
+  `
         )
         .join("\n")
     : "";
@@ -40,8 +49,11 @@ ${fileContentsString}
   `;
 }
 
-async function executeActions(actionEvents) {
-  const files = [];
+async function executeActions(
+  actionEvents: ActionEvent[]
+): Promise<{ files: FileContent[] }> {
+  const files: FileContent[] = [];
+
   for (const actionEvent of actionEvents) {
     switch (actionEvent.type) {
       case "create-directory":
@@ -53,29 +65,34 @@ async function executeActions(actionEvents) {
         break;
 
       case "create-image":
-        await actions.createImage.execute(actionEvent);
+        if (
+          "createImage" in actions &&
+          typeof actions.createImage !== "undefined"
+        ) {
+          await actions.createImage.execute(actionEvent);
+        }
         break;
 
       case "read-file":
         const fileContents = await actions.readFile.execute(actionEvent);
-        files.push({
-          fileNamePath: actionEvent.fileNamePath,
-          contents: fileContents,
-        });
+        if (fileContents) {
+          files.push({
+            fileNamePath: actionEvent.fileNamePath!,
+            contents: fileContents,
+          });
+        }
         break;
 
       default:
-        console.error("Invalid action type:", actionEvent.type);
+        console.error("Invalid action type:", (actionEvent as any).type);
         break;
     }
   }
 
-  return {
-    files,
-  };
+  return { files };
 }
 
-async function run() {
+async function run(): Promise<void> {
   const args = process.argv.slice(2);
   const userInput = args.join(" ");
   const prompt = await getPrompt(userInput);
@@ -89,6 +106,6 @@ async function run() {
   }
 }
 
-(async () => {
-  await run();
-})();
+run().catch((err) => {
+  console.error("Error running CLI:", err);
+});

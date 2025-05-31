@@ -4,13 +4,20 @@
   "main": "index.js",
   "license": "MIT",
   "bin": {
-    "llm-actions": "./src/index.js"
+    "llm-actions": "./dist/index.js"
   },
   "dependencies": {
-    "axios": "^1.7.2",
+    "axios": "^1.9.0",
     "dotenv": "^16.4.5",
     "ollama": "^0.5.12",
     "openai": "^4.51.0"
   },
-  "scripts": {}
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.5",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "postinstall": "npm run build && chmod +x dist/index.js"
+  }
 }
