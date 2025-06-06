@@ -8,19 +8,28 @@ export type ReadFileActionEvent = {
   fileNamePath: string;
 };
 
-export type ReadFileActioEventReturn = string | undefined;
+export type FileContent = {
+  fileNamePath: string;
+  contents: string;
+};
+
+export type ReadFileActioEventReturn = FileContent | undefined;
 
 export const readFile: ActionDefinition<
   ReadFileActionEvent,
   ReadFileActioEventReturn
 > = {
-  async execute(action: ReadFileActionEvent): Promise<string | undefined> {
+  type: "read-file",
+  async execute(action: ReadFileActionEvent): Promise<FileContent | undefined> {
     try {
       const currentDir = utils.getCurrentDir();
       const filePath = path.join(currentDir, action.fileNamePath);
-      const fileContents = await fs.readFile(filePath, "utf8");
-      console.log(`Read file: ${filePath}`);
-      return fileContents;
+      const contents = await fs.readFile(filePath, "utf8");
+
+      return {
+        fileNamePath: action.fileNamePath,
+        contents,
+      };
     } catch (error) {
       console.error(`Error reading file ${action.fileNamePath}:`, error);
     }
@@ -28,6 +37,7 @@ export const readFile: ActionDefinition<
 
   promptActionDefinition: `
     // Action type: Read file
+    // Note: Always use this action first if you want to write to an existing file
     {
       type: "read-file",
       fileNamePath: string

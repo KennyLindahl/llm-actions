@@ -2,7 +2,7 @@ import {
   createDirectory,
   CreateDirectoryActionEvent,
 } from "./create-directory";
-import { createFile, type CreateFileActionEvent } from "./create-file";
+import { writeFile, type WriteFileActionEvent } from "./write-file";
 import { createImage, type CreateImageActionEvent } from "./create-image";
 import {
   readFile,
@@ -13,26 +13,33 @@ import { config } from "../config";
 
 export type ActionEvent =
   | CreateDirectoryActionEvent
-  | CreateFileActionEvent
+  | WriteFileActionEvent
   | CreateImageActionEvent
   | ReadFileActionEvent;
 
-export type ActionDefinition<Action = ActionEvent, ActionReturn = void> = {
+type BaseAction = {
+  type: string;
+};
+
+export type ActionDefinition<
+  Action extends BaseAction = ActionEvent,
+  ActionReturn = void,
+> = {
+  type: Action["type"];
   execute: (action: Action) => Promise<ActionReturn>;
   promptActionDefinition: string;
 };
 
-type Actions = {
-  createDirectory: ActionDefinition<CreateDirectoryActionEvent>;
-  createFile: ActionDefinition<CreateFileActionEvent>;
-  createImage?: ActionDefinition<CreateImageActionEvent>;
-  readFile: ActionDefinition<ReadFileActionEvent, ReadFileActioEventReturn>;
-};
+export type Action =
+  | ActionDefinition
+  | ActionDefinition<CreateDirectoryActionEvent>
+  | ActionDefinition<WriteFileActionEvent>
+  | ActionDefinition<CreateImageActionEvent>
+  | ActionDefinition<ReadFileActionEvent, ReadFileActioEventReturn>;
 
-export const actions: Actions = {
+export const actions: Record<string, Action> = {
   createDirectory,
-  createFile,
+  writeFile,
   readFile,
-  ...(config.openAi.apiKey && config.openAi.imageModel ? { createImage } : {}),
+  ...(createImage ? { createImage } : {}),
 };
-
