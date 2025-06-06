@@ -6,7 +6,6 @@ import {
 import { ModelProvider } from "./models";
 import * as utils from "./utils";
 import { executePrompt } from "./models/index";
-import { FileContent } from "./actions/read-file";
 
 type LlmActionsOptions = {
   // We need to accept array of
@@ -16,6 +15,16 @@ type LlmActionsOptions = {
   // -----------------------------------------
   // TODO: DO we really need this to be optional?
   actions?: Action[];
+};
+
+export type PromptReturnValue = {
+  userInput: string;
+  actionEvents: ActionEvent[];
+  actionReturnValues: {
+    type: string;
+    returnValue: Promise<any>;
+  }[];
+  instance: LlmActions;
 };
 
 export const actions = defaultActions;
@@ -45,22 +54,13 @@ export class LlmActions {
   }
 
   // Was private (remove comment if we dont need it to be private)
-  async getPrompt(
-    userInput: string,
-    fileContents?: FileContent[], // This should not be sent here, rather it should be possible to add to the prompt ex getPrompt().add("..").add("..")
-  ): Promise<string> {
+  async getPrompt(userInput: string): Promise<string> {
     const currentDirectory = utils.getCurrentDir();
     const directoryTree = await utils.readDirectoryString(currentDirectory);
 
     const actionDefinitions = Object.values(this.actions)
       .map((action) => `${action.promptActionDefinition}\n`)
       .join("");
-
-    const fileContentsString = fileContents
-      ? fileContents
-          .map((file) => `//${file.fileNamePath}\n${file.contents}\n`)
-          .join("\n")
-      : "";
 
     return `
 Based on this query:
@@ -74,8 +74,6 @@ Output this format:
 
 This is the current directory structure:
 ${directoryTree}
-
-${fileContentsString}
     `;
   }
 
@@ -105,16 +103,10 @@ ${fileContentsString}
   // Most of prompt() should be defined as a flow, which should be possible to:
   // - Use as is
   // - Override (people define their own flows)
-  async prompt(userInput: string): Promise<{
-    actionReturnValues: {
-      type: string;
-      returnValue: Promise<any>;
-    }[];
-    instance: LlmActions;
-  }> {
+  async prompt(userInput: string): Promise<PromptReturnValue> {
     const prompt = await this.getPrompt(userInput);
     const actionEvents = await executePrompt(prompt);
     const actionReturnValues = await this.executeActions(actionEvents);
-    return { actionReturnValues, instance: this };
+    return { userInput, actionEvents, actionReturnValues, instance: this };
   }
 }

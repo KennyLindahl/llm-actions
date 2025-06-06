@@ -9,7 +9,6 @@ import {
   ReadFileActioEventReturn,
   type ReadFileActionEvent,
 } from "./read-file";
-import { config } from "../config";
 
 export type ActionEvent =
   | CreateDirectoryActionEvent
