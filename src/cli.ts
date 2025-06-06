@@ -1,6 +1,59 @@
 #!/usr/bin/env node
-import { LlmActions, actions } from ".";
+import { LlmActions, PromptReturnValue, actions } from ".";
 import { type ActionEvent } from "./actions";
+
+// NEXT THING TO FIX! <------ MAKE THE STEPS CONTINUE UNTIL THE PLAN IS DONE (only running 2 steps currently)
+
+// Move to index.ts
+async function passReadFileContents({
+  userInput,
+  plan,
+  actionEvents,
+  actionReturnValues,
+  instance,
+}: PromptReturnValue) {
+  console.log("Previous action events:", JSON.stringify(actionEvents, null, 2));
+  const readFileValues = await Promise.all(
+    (
+      actionReturnValues.filter((event) => event.type === "read-file") || []
+    ).map((event) => event.returnValue),
+  );
+
+  if (readFileValues) {
+    console.log("readFileValues:", readFileValues);
+    const fileContentsString = readFileValues
+      ? readFileValues
+          .map((file) => `//${file.fileNamePath}\n${file.contents}\n`)
+          .join("\n")
+      : "";
+
+    // - Main prompt should have the previous actions passed together with the return values ()
+    // - The action should choose how to format the return values for the upcoming prompt (should be possible to override?)
+
+    // CONTINUE HERE LATER! <--------------------------------------------------------------------------------------------
+    // Maybe every action that returns a value should have a `toPromptString` method?
+    // - Then this could be automatically passed to the next iteration
+
+    // It could be done even further:
+    // - In the first iteration:
+    //   - The LLM comes up with a plan (only if there is further steps needed)
+    //   - Executes the first step
+    // - Second iteration:
+    //   - Plan may be altered
+    //   - Indicate that the first step is done and the intention behind it
+    //   - Contains
+    const mainPrompt = await instance.getPrompt(userInput);
+
+    const newPrompt = `${mainPrompt}
+${fileContentsString}
+
+// Plan (You MUST always follow the plan, and assume that the currentStep:true has been executed and you should execute the next step in terms of actions):
+${JSON.stringify(plan, null, 2)}
+`;
+    const newActionEvents = await instance.executePrompt(newPrompt);
+    await instance.executeActions(newActionEvents.actions);
+  }
+}
 
 // This part should be moved to cli.ts (then this should be )
 async function run(): Promise<void> {
@@ -33,25 +86,12 @@ async function run(): Promise<void> {
   });
 
   // Todo: Likely the default flow (anonynmous function) should be moved to the class
-  test.prompt(userInput).then(async ({ actionReturnValues, instance }) => {
-    const readFileValues = await Promise.all(
-      (
-        actionReturnValues.filter((event) => event.type === "read-file") || []
-      ).map((event) => event.returnValue),
-    );
-
-    if (readFileValues) {
-      console.log("readFileValues:", readFileValues);
-      const newPrompt = await instance.getPrompt(userInput, readFileValues);
-      const newActionEvents = await instance.executePrompt(newPrompt);
-      await instance.executeActions(newActionEvents);
-    }
-  });
+  test.prompt(userInput).then(passReadFileContents);
 }
 
-// Add examples in Readme of 
-// - How to create a custom event 
-// - How to define a custom flow 
+// Add examples in Readme of
+// - How to create a custom event
+// - How to define a custom flow
 
 run().catch((err) => {
   console.error("Error running CLI:", err);

@@ -1,23 +1,19 @@
 import { Ollama } from "ollama";
 import { config } from "../config";
-
-interface ParsedContent {
-  actions?: unknown[] | unknown;
-}
+import { ParsedContent, SYSTEM_PROMPT } from ".";
 
 const ollama = new Ollama({
   host: config.ollama.host,
 });
 
-export async function executePrompt(prompt: string): Promise<unknown[]> {
+export async function executePrompt(prompt: string): Promise<ParsedContent> {
   try {
     const response = await ollama.chat({
       model: config.ollama.model as string,
       messages: [
         {
           role: "system",
-          content:
-            "Always exclusively always answer in in JSON format: {actions: [Actions here]}",
+          content: SYSTEM_PROMPT,
         },
         {
           role: "user",
@@ -36,12 +32,7 @@ export async function executePrompt(prompt: string): Promise<unknown[]> {
     content = jsonMatch[0];
 
     const parsedContent: ParsedContent = JSON.parse(content);
-
-    if (parsedContent && Array.isArray(parsedContent.actions)) {
-      return parsedContent.actions;
-    }
-
-    return parsedContent?.actions ? [parsedContent.actions] : [];
+    return parsedContent;
   } catch (error) {
     console.error("Error executing prompt with Ollama:", error);
     throw error;

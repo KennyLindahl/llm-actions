@@ -1,7 +1,7 @@
 import path from "path";
 import axios from "axios";
 import { promises as fs } from "fs";
-import { openai } from "../models/openai";
+import { openai } from "../providers/openai";
 import { config } from "../config";
 import * as utils from "../utils";
 import OpenAI from "openai";

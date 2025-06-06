@@ -1,21 +1,18 @@
 import { config } from "../config";
 import OpenAI from "openai";
+import { ParsedContent, SYSTEM_PROMPT } from ".";
 
 export const openai = new OpenAI({
   apiKey: config.openAi.apiKey,
 });
 
-type Action = {
-  [key: string]: any;
-};
-
-export async function executePrompt(prompt: string): Promise<Action[]> {
+export async function executePrompt(prompt: string): Promise<ParsedContent> {
   try {
     const response = await openai.chat.completions.create({
       messages: [
         {
           role: "system",
-          content: "Answer in json format",
+          content: SYSTEM_PROMPT,
         },
         { role: "user", content: prompt },
       ],
@@ -25,9 +22,8 @@ export async function executePrompt(prompt: string): Promise<Action[]> {
     });
 
     const content = response.choices[0].message.content;
-    const parsedContent = JSON.parse(content ?? "{}").actions;
-
-    return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
+    const parsedContent: ParsedContent = JSON.parse(content ?? "{}");
+    return parsedContent;
   } catch (error) {
     console.error("Error executing prompt with OpenAI:", error);
     throw error;
