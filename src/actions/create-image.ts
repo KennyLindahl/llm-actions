@@ -5,6 +5,7 @@ import { openai } from "../models/openai";
 import { config } from "../config";
 import * as utils from "../utils";
 import OpenAI from "openai";
+import { ActionDefinition } from ".";
 
 // Infer ImageSize type directly from the OpenAI SDK
 type ImageSize = Parameters<OpenAI["images"]["generate"]>[0]["size"];
@@ -18,7 +19,8 @@ export type CreateImageActionEvent = {
 };
 
 // Define the module as a named export for cleaner imports elsewhere
-export const createImage = {
+export const createImage: ActionDefinition<CreateImageActionEvent> = {
+  type: "create-image",
   async execute(action: CreateImageActionEvent): Promise<void> {
     try {
       const currentDir = utils.getCurrentDir();
@@ -44,7 +46,6 @@ export const createImage = {
       });
 
       await fs.writeFile(filePath, imageResponse.data);
-      console.log(`Created image: ${filePath}`);
     } catch (error) {
       console.error(`Error creating image ${action.fileNamePath}:`, error);
     }

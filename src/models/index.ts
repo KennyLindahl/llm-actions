@@ -2,7 +2,7 @@ import * as openai from "./openai.js";
 import * as ollama from "./ollama.js";
 import { config } from "../config.js";
 
-type ModelProvider = {
+export type ModelProvider = {
   executePrompt: (prompt: string) => Promise<any>;
 };
 

@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "bin": {
-    "llm-actions": "./dist/index.js"
+    "llm-actions": "./dist/cli.js"
   },
   "dependencies": {
     "axios": "^1.9.0",
