@@ -1,38 +1,68 @@
-#!/usr/bin/env node
-
-import { actions } from "./actions";
+import {
+  type Action,
+  type ActionEvent,
+  actions as defaultActions,
+} from "./actions";
+import { ModelProvider } from "./models";
 import * as utils from "./utils";
 import { executePrompt } from "./models/index";
-import { ActionEvent } from "./actions";
 
-type FileContent = {
-  fileNamePath: string;
-  contents: string;
+type LlmActionsOptions = {
+  // We need to accept array of
+  // - Any of the default actions
+  // - Custom actions: ActionDefinition<{type: string}> should at least have type in the action
+  // actions?: Partial<typeof defaultActions>;
+  // -----------------------------------------
+  // TODO: DO we really need this to be optional?
+  actions?: Action[];
 };
 
-async function getPrompt(
-  userInput: string,
-  fileContents?: FileContent[]
-): Promise<string> {
-  const currentDirectory = utils.getCurrentDir();
-  const directoryTree = await utils.readDirectoryString(currentDirectory);
+export type PromptReturnValue = {
+  userInput: string;
+  actionEvents: ActionEvent[];
+  actionReturnValues: {
+    type: string;
+    returnValue: Promise<any>;
+  }[];
+  instance: LlmActions;
+};
 
-  const actionDefinitions = Object.values(actions)
-    .map((action) => `${action.promptActionDefinition}\n`)
-    .join("");
+export const actions = defaultActions;
 
-  const fileContentsString = fileContents
-    ? fileContents
-        .map(
-          (file) =>
-            `//${file.fileNamePath}
-${file.contents}
-  `
-        )
-        .join("\n")
-    : "";
+export class LlmActions {
+  private actions: Action[];
+  executePrompt: ModelProvider["executePrompt"];
+  private eventCallbacks: ((
+    event: ActionEvent,
+    returnValue: Promise<any>,
+  ) => void)[] = [];
 
-  return `
+  constructor(options: LlmActionsOptions = {}) {
+    this.actions = options.actions || Object.values(defaultActions);
+    // Todo: provider should be passed in the constructor
+    this.executePrompt = executePrompt;
+  }
+
+  onEvent(callback: (event: ActionEvent) => void) {
+    this.eventCallbacks.push(callback);
+  }
+
+  private emit(event: ActionEvent, returnValue: Promise<any>) {
+    for (const cb of this.eventCallbacks) {
+      cb(event, returnValue);
+    }
+  }
+
+  // Was private (remove comment if we dont need it to be private)
+  async getPrompt(userInput: string): Promise<string> {
+    const currentDirectory = utils.getCurrentDir();
+    const directoryTree = await utils.readDirectoryString(currentDirectory);
+
+    const actionDefinitions = Object.values(this.actions)
+      .map((action) => `${action.promptActionDefinition}\n`)
+      .join("");
+
+    return `
 Based on this query:
 "${userInput}"
 
@@ -44,68 +74,39 @@ Output this format:
 
 This is the current directory structure:
 ${directoryTree}
+    `;
+  }
 
-${fileContentsString}
-  `;
-}
+  // Was private (remove comment if we dont need it to be private)
+  async executeActions(actionEvents: ActionEvent[]) {
+    const returnData = [];
 
-async function executeActions(
-  actionEvents: ActionEvent[]
-): Promise<{ files: FileContent[] }> {
-  const files: FileContent[] = [];
+    for (const event of actionEvents) {
+      const action = Object.values(this.actions).find(
+        (actionItem) => actionItem.type === event.type,
+      );
 
-  for (const actionEvent of actionEvents) {
-    switch (actionEvent.type) {
-      case "create-directory":
-        await actions.createDirectory.execute(actionEvent);
-        break;
-
-      case "create-file":
-        await actions.createFile.execute(actionEvent);
-        break;
-
-      case "create-image":
-        if (
-          "createImage" in actions &&
-          typeof actions.createImage !== "undefined"
-        ) {
-          await actions.createImage.execute(actionEvent);
-        }
-        break;
-
-      case "read-file":
-        const fileContents = await actions.readFile.execute(actionEvent);
-        if (fileContents) {
-          files.push({
-            fileNamePath: actionEvent.fileNamePath!,
-            contents: fileContents,
-          });
-        }
-        break;
-
-      default:
-        console.error("Invalid action type:", (actionEvent as any).type);
-        break;
+      if (action && event) {
+        // TODO: 'event as any' should be resolved below
+        const actionReturnValue = action.execute(event as any);
+        this.emit(event, actionReturnValue);
+        returnData.push({
+          type: action.type,
+          returnValue: actionReturnValue as Promise<any>,
+        });
+      }
     }
+
+    return returnData;
   }
 
-  return { files };
-}
-
-async function run(): Promise<void> {
-  const args = process.argv.slice(2);
-  const userInput = args.join(" ");
-  const prompt = await getPrompt(userInput);
-  const actionEvents = await executePrompt(prompt);
-  const actionReturns = await executeActions(actionEvents);
-
-  if (actionReturns.files.length > 0) {
-    const newPrompt = await getPrompt(userInput, actionReturns.files);
-    const newActionEvents = await executePrompt(newPrompt);
-    await executeActions(newActionEvents);
+  // Most of prompt() should be defined as a flow, which should be possible to:
+  // - Use as is
+  // - Override (people define their own flows)
+  async prompt(userInput: string): Promise<PromptReturnValue> {
+    const prompt = await this.getPrompt(userInput);
+    const actionEvents = await executePrompt(prompt);
+    const actionReturnValues = await this.executeActions(actionEvents);
+    return { userInput, actionEvents, actionReturnValues, instance: this };
   }
 }
-
-run().catch((err) => {
-  console.error("Error running CLI:", err);
-});
